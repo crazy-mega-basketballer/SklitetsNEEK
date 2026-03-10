@@ -11,7 +11,7 @@ export default function TabLayout() {
         headerStyle: {
           backgroundColor: '#25292e',
         },
-        headerShadowVisible: false,
+        headerShadowVisible: true,
         headerTintColor: '#ffa200',
         tabBarStyle: {
           backgroundColor: '#25292e',
@@ -26,7 +26,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="deep"
         options={{
-          title: 'deep',
+          title: 'Deep',
+        }}
+      />
+      <Tabs.Screen
+        name="exp"
+        options={{
+          title: 'Experiments',
         }}
       />
     </Tabs>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Button, Text } from 'react-native';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import {
   useAudioRecorder,
   AudioModule,
@@ -19,39 +19,50 @@ export default function Record() {
   const audioSource = require("@/assets/sounds/www.mp3");
   const player = useAudioPlayer(audioSource);
 
-  const [showPlayer, setShowPlayer] = useState<boolean>(false);
+  const [volume, setVolume] = useState<number>(0);
   
   // Используем ReturnType<typeof setInterval> для правильного типа
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
+  const checkVolIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  let startRecordTime = Date.now();
+
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (checkVolIntervalRef.current) {
+        clearInterval(checkVolIntervalRef.current);
       }
     };
   }, []);
+
+  const checkValume = () => {
+    let valume = audioRecorder.getStatus().metering
+    if (audioRecorder.getStatus().metering !== undefined) {
+        valume = 160 + Math.floor(valume);
+        setVolume(valume);
+    }
+  };
 
   const record = async () => {
     await audioRecorder.prepareToRecordAsync();
     audioRecorder.record();
 
-    if (!intervalRef.current) {
-      intervalRef.current = setInterval(() => {
-        console.log(audioRecorder.getStatus().metering);
-      }, 500);
+    if (!checkVolIntervalRef.current) {
+      checkVolIntervalRef.current = setInterval(() => {
+        checkValume();
+        startRecordTime = Date.now();
+      }, 200);
     }
   };
 
   const stopRecording = async () => {
     await audioRecorder.stop();
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (checkVolIntervalRef.current) {
+      clearInterval(checkVolIntervalRef.current);
+      checkVolIntervalRef.current = null;
     }
 
-    setShowPlayer(true);
+    setVolume(0);
     const newAudioSource = audioRecorder.uri;
     if (newAudioSource) {
       player.replace(newAudioSource);
@@ -74,37 +85,53 @@ export default function Record() {
 
   return (
     <View style={styles.container}>
-      <Button
-        title={recorderState.isRecording ? 'Stop Recording' : 'Start Recording'}
-        onPress={recorderState.isRecording ? stopRecording : record}
-      />
-      {showPlayer ? (
-        <View>
-          <View style={styles.container}>
-            <Button title="Play Sound" onPress={() => player.play()} />
-            <Button
-              title="Replay Sound"
-              onPress={() => {
-                player.seekTo(0);
-                player.play();
-              }}
-            />
-          </View>
-        </View>
-      ) : (
-        <View>
-          <Text>NETU</Text>
-        </View>
-      )}
+
+      <Text style={styles.text}>{volume}</Text>
+
+      <Pressable onPress={recorderState.isRecording ? stopRecording : record}
+      style={styles.buttons}>
+        <Text style={styles.butText}>{recorderState.isRecording ? 'Остановить запись' : 'Начать запись'}</Text>
+      </Pressable>
+
+      <Pressable onPress={() => player.play()}
+        style={styles.buttons}>
+        <Text style={styles.butText}>Проиграть</Text>
+      </Pressable>
+
+      <Pressable onPress={() => {
+        player.seekTo(0);
+        player.play();
+      }}
+      style={styles.buttons}>
+        <Text style={styles.butText}>В начало</Text>
+      </Pressable>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: 250,
+    height: 500,
     justifyContent: 'center',
     backgroundColor: '#636363',
-    padding: 10,
+    borderRadius: 15,
+  },
+  text: {
+    textAlign: 'center',
+    fontSize: 35,
+    padding: 15,
+    color: '#d1d2bb'
+  },
+  buttons: {
+    margin: 10,
+    padding:10,
+    borderRadius: 10,
+    backgroundColor: '#d1d2bb',
+  },
+  butText: {
+    textAlign: 'center',
+    fontSize: 20,
   },
 });
